@@ -43,7 +43,7 @@ def quitar():
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file provided'}), 400
+        return jsonify({'error': 'No se proporcionó ningún archivo de audio'}), 400
 
     audio_file = request.files['audio']
     input_path = 'temp_input_audio.webm'
@@ -52,15 +52,13 @@ def transcribe():
     print(f"Archivo guardado en {input_path}")
     print("Tamaño del archivo:", os.path.getsize(input_path), "bytes")
 
-    
     ffmpeg_path = r"C:\Program Files\ffmpeg-2025-05-15-git-12b853530a-essentials_build\bin\ffmpeg.exe"
 
     try:
         subprocess.run([ffmpeg_path, '-y', '-i', input_path, output_path], check=True)
-        
     except subprocess.CalledProcessError as e:
-        
-        return jsonify({'error': f'Error converting audio: {e}'}), 400
+        os.remove(input_path)
+        return jsonify({'error': f'Error al convertir el audio con ffmpeg: {e}'}), 400
 
     recognizer = sr.Recognizer()
     try:
@@ -68,17 +66,22 @@ def transcribe():
             audio = recognizer.record(source)
             text = recognizer.recognize_google(audio)
     except sr.UnknownValueError:
-        text = "No se entendió el audio."
+        os.remove(input_path)
+        os.remove(output_path)
+        return jsonify({'error': 'No se entendió el audio.'}), 400
     except sr.RequestError as e:
-        text = f"Error con el servicio de reconocimiento: {e}"
+        os.remove(input_path)
+        os.remove(output_path)
+        return jsonify({'error': f'Error con el servicio de reconocimiento: {e}'}), 400
     except Exception as e:
-        text = f"Error al procesar el audio: {e}"
+        os.remove(input_path)
+        os.remove(output_path)
+        return jsonify({'error': f'Error al procesar el audio: {e}'}), 400
 
     os.remove(input_path)
     os.remove(output_path)
 
     return jsonify({'text': text})
-    
 
 
 if __name__ == '__main__':

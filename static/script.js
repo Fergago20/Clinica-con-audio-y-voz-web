@@ -3,7 +3,7 @@ const stopButton = document.getElementById('stopButton');
 const transcription = document.getElementById('transcription');
 const removeButton = document.getElementById('removeButton');
 const addButton = document.getElementById('addButton');
-
+const cleanButton = document.getElementById('cleanButton');
 function hablar(texto) {
     const mensaje = new SpeechSynthesisUtterance(texto);
     mensaje.lang = 'es-ES'; 
@@ -12,6 +12,10 @@ function hablar(texto) {
 
 actualizarColaVisual();
 hablar("Sigue trabajando duro, doctor Chapatín")
+
+cleanButton.addEventListener('click', () => {
+    transcription.value = '';
+});
 
 recordButton.addEventListener('click', async () => {
     try {
@@ -55,7 +59,13 @@ recordButton.addEventListener('click', async () => {
 });
 
 addButton.addEventListener('click', async () => {
-    const texto = transcription.value;
+    const texto = transcription.value.trim();
+
+    if (texto === '' || texto === 'No se entendió el audio.' || texto.startsWith('Error') || texto.startsWith('⚠️')) {
+        console.warn('Texto inválido, no se agregará a la cola:', texto);
+        transcription.value = '⚠️ No se puede agregar ese texto.';
+        return;
+    }
 
     try {
         const response = await fetch('/agregar', {
